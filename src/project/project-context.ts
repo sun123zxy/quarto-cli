@@ -91,7 +91,6 @@ import { computeProjectEnvironment } from "./project-environment.ts";
 import { ProjectEnvironment } from "./project-environment-types.ts";
 import { NotebookContext } from "../render/notebook/notebook-types.ts";
 import { MappedString } from "../core/mapped-text.ts";
-import { singleFileProjectContext } from "./types/single-file/single-file.ts";
 
 export async function projectContext(
   path: string,
@@ -295,7 +294,7 @@ export async function projectContext(
         // file isn't in list of input files then return a single-file project
         const fullPath = normalizePath(path);
         if (Deno.statSync(fullPath).isFile && !files.includes(fullPath)) {
-          return singleFileProjectContext(fullPath, notebookContext, flags);
+          return undefined;
         }
 
         debug(`projectContext: Found Quarto project in ${dir}`);
