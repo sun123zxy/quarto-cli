@@ -341,7 +341,7 @@ export async function projectResolveFullMarkdownForFile(
   const temp = createTempContext();
 
   if (!markdown) {
-    const inputPath = join(project.dir, file);
+    const inputPath = isAbsolute(file) ? file : join(project.dir, file);
     if (!existsSync(inputPath)) {
       throw new Error("File does not exist: " + inputPath);
     }
