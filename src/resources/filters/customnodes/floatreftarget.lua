@@ -377,7 +377,7 @@ end, function(float)
   else
     -- For beamer subfloats without caption command, just output the caption text
     -- as a plain paragraph below the content
-    if float.caption_long and (#float.caption_long.content > 0 or type(float.caption_long) == "Inlines") then
+    if float.caption_long and (type(float.caption_long) == "Inlines" or (float.caption_long.content and #float.caption_long.content > 0)) then
       local caption_inlines
       if type(float.caption_long) ~= "table" then
         caption_inlines = quarto.utils.as_inlines(float.caption_long)
