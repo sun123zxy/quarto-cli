@@ -377,21 +377,24 @@ end, function(float)
   else
     -- For beamer subfloats without caption command, just output the caption text
     -- as a plain paragraph below the content
-    if float.caption_long and (type(float.caption_long) == "Inlines" or (float.caption_long.content and #float.caption_long.content > 0)) then
+    if float.caption_long then
       local caption_inlines
       if type(float.caption_long) ~= "table" then
         caption_inlines = quarto.utils.as_inlines(float.caption_long)
       else
         caption_inlines = float.caption_long
       end
-      -- Add the label
-      local label_cmd = quarto.LatexInlineCommand({
-        name = "label",
-        arg = pandoc.RawInline("latex", float.identifier)
-      })
-      caption_inlines = caption_inlines or pandoc.Inlines({})
-      caption_inlines:insert(1, label_cmd)
-      latex_caption = caption_inlines
+      if caption_inlines and #caption_inlines > 0 then
+        -- Add the label
+        local label_cmd = quarto.LatexInlineCommand({
+          name = "label",
+          arg = pandoc.RawInline("latex", float.identifier)
+        })
+        caption_inlines:insert(1, label_cmd)
+        latex_caption = caption_inlines
+      else
+        latex_caption = nil
+      end
     else
       latex_caption = nil
     end
