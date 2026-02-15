@@ -331,9 +331,8 @@ end, function(float)
     -- See https://github.com/quarto-dev/quarto-cli/issues/13372
     if not _quarto.format.isBeamerOutput() then
       caption_cmd_name = "subcaption"
-    else
-      caption_cmd_name = nil  -- No caption command in beamer subfloats
     end
+    -- else: caption_cmd_name remains nil for beamer subfloats
   elseif float.content.t == "Table" and float_type == "tbl" then -- float.parent_id is nil here
     -- special-case the situation where the figure is Table and the content is Table
     --
