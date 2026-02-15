@@ -326,7 +326,14 @@ end, function(float)
       fail_and_ask_for_bugreport("Subcaptions for side captions are unimplemented.")
       return {}
     end
-    caption_cmd_name = "subcaption"
+    -- In beamer, subfloats are placed in columns which are not float environments,
+    -- so we cannot use \subcaption. Instead, omit the caption command.
+    -- See https://github.com/quarto-dev/quarto-cli/issues/13372
+    if not _quarto.format.isBeamerOutput() then
+      caption_cmd_name = "subcaption"
+    else
+      caption_cmd_name = nil  -- No caption command in beamer subfloats
+    end
   elseif float.content.t == "Table" and float_type == "tbl" then -- float.parent_id is nil here
     -- special-case the situation where the figure is Table and the content is Table
     --
@@ -346,25 +353,49 @@ end, function(float)
   end
 
   local latex_caption
-  if float.caption_long and type(float.caption_long) ~= "table" then
-    latex_caption = quarto.utils.as_inlines(float.caption_long)
+  if caption_cmd_name then
+    -- Only create a caption command if we have a caption_cmd_name
+    if float.caption_long and type(float.caption_long) ~= "table" then
+      latex_caption = quarto.utils.as_inlines(float.caption_long)
+    else
+      latex_caption = float.caption_long
+    end
+    latex_caption = latex_caption or pandoc.Inlines({})
+
+    local label_cmd = quarto.LatexInlineCommand({
+      name = "label",
+      arg = pandoc.RawInline("latex", float.identifier)
+    })
+    latex_caption:insert(1, label_cmd)
+    local latex_caption_content = latex_caption
+
+    latex_caption = quarto.LatexInlineCommand({
+      name = caption_cmd_name,
+      opt_arg = fig_scap,
+      arg = pandoc.Span(quarto.utils.as_inlines(latex_caption_content or {}) or {}) -- unnecessary to do the "or {}" bit but the Lua analyzer doesn't know that
+    })
   else
-    latex_caption = float.caption_long
+    -- For beamer subfloats without caption command, just output the caption text
+    -- as a plain paragraph below the content
+    if float.caption_long and (#float.caption_long.content > 0 or type(float.caption_long) == "Inlines") then
+      local caption_inlines
+      if type(float.caption_long) ~= "table" then
+        caption_inlines = quarto.utils.as_inlines(float.caption_long)
+      else
+        caption_inlines = float.caption_long
+      end
+      -- Add the label
+      local label_cmd = quarto.LatexInlineCommand({
+        name = "label",
+        arg = pandoc.RawInline("latex", float.identifier)
+      })
+      caption_inlines = caption_inlines or pandoc.Inlines({})
+      caption_inlines:insert(1, label_cmd)
+      latex_caption = caption_inlines
+    else
+      latex_caption = nil
+    end
   end
-  latex_caption = latex_caption or pandoc.Inlines({})
-
-  local label_cmd = quarto.LatexInlineCommand({
-    name = "label",
-    arg = pandoc.RawInline("latex", float.identifier)
-  })
-  latex_caption:insert(1, label_cmd)
-  local latex_caption_content = latex_caption
-
-  latex_caption = quarto.LatexInlineCommand({
-    name = caption_cmd_name,
-    opt_arg = fig_scap,
-    arg = pandoc.Span(quarto.utils.as_inlines(latex_caption_content or {}) or {}) -- unnecessary to do the "or {}" bit but the Lua analyzer doesn't know that
-  })
 
   if float.parent_id then
     -- need to fixup subtables because nested longtables appear to give latex fits
